@@ -298,9 +298,7 @@
     // 核帳與補印邏輯
     async function searchStudent() {
       const eventName = document.getElementById('reconEvent').value;
-      const keyword = document.getElementById('reconKeyword').value.trim();
-      if(!keyword) return alert('請輸入搜尋關鍵字！');
-      
+      const keyword = document.getElementById('reconKeyword').value.trim();  
       const resDiv = document.getElementById('reconResults');
       resDiv.innerHTML = '<div class="text-center text-muted">搜尋資料庫中...</div>';
       
