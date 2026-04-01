@@ -104,8 +104,9 @@
           <div class="input-group mb-4">
             <span class="input-group-text bg-white">活動</span>
             <select id="reconEvent" class="form-select" style="max-width: 200px;"></select>
-            <input type="text" id="reconKeyword" class="form-control" placeholder="輸入學生姓名或收據編號搜尋...">
+            <input type="text" id="reconKeyword" class="form-control" placeholder="輸入姓名/收據搜尋，或點擊右側顯示全部...">
             <button class="btn btn-primary" onclick="searchStudent()">🔍 搜尋</button>
+            <button class="btn btn-outline-secondary" onclick="document.getElementById('reconKeyword').value=''; searchStudent();">📋 顯示全部</button>
           </div>
           <div id="reconResults">
              <div class="text-center text-muted p-5">請輸入關鍵字開始核帳</div>
