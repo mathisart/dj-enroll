@@ -357,7 +357,8 @@
 
       const printData = {
         eventName: eventName, grade: r.grade, clazz: r.clazz, no: r.no, name: r.name,
-        level: r.level, addonDetail: r.addons, totalAmount: r.totalDue, receiptNo: r.receipt
+        level: r.level, addonDetail: r.addons, totalAmount: r.totalDue, receiptNo: r.receipt,
+        paid: r.paid, status: r.status  // 🌟 這裡把遺漏的「實收」與「狀態」補上！
       };
 
       const res = await callAPI('generateReceiptPDF', { data: printData });
