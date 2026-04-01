@@ -46,9 +46,9 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">身分驗證 (年/班/座號)</label>
               <div class="input-group">
-                <input type="number" id="regG" class="form-control" placeholder="年">
-                <input type="number" id="regC" class="form-control" placeholder="班">
-                <input type="number" id="regN" class="form-control" placeholder="號">
+                <input type="number" id="regG" class="form-control" placeholder="年" min="1">
+                <input type="number" id="regC" class="form-control" placeholder="班" min="1">
+                <input type="number" id="regN" class="form-control" placeholder="號" min="1">
                 <button class="btn btn-primary" onclick="verifyStudent()">🔍 檢查姓名</button>
               </div>
             </div>
