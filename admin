@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔒 大甲國中 - 教務處活動報名系統 (管理端)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root { --admin-green: #2d5a27; --admin-bg: #f4f7f6; }
+    body { background-color: var(--admin-bg); font-family: "Microsoft JhengHei", sans-serif; padding-top: 20px; }
+    .nav-tabs .nav-link { color: #666; font-weight: bold; border-radius: 10px 10px 0 0; }
+    .nav-tabs .nav-link.active { background-color: var(--admin-green); color: white !important; border: none; }
+    .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .btn-success { background-color: var(--admin-green); border: none; }
+    .btn-success:hover { background-color: #1e3d1a; }
+    #reconResults { max-height: 600px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+  <div class="container mb-5">
+    <!-- 頂部標題列 -->
+    <div class="d-flex justify-content-between align-items-end border-bottom border-3 border-success pb-2 mb-4">
+      <h2 class="text-success m-0">大甲國中 教務處活動報名系統 <small style="font-size: 14px; color: #888;">管理後台 (API v3.0)</small></h2>
+      <button class="btn btn-sm btn-outline-secondary" onclick="init()">🔄 重新整理系統</button>
+    </div>
+
+    <!-- 分頁導覽 -->
+    <ul class="nav nav-tabs mb-4" id="adminTab" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab1">單筆錄入</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab2">📂 整批匯入</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab3">快速核帳</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab4">活動概覽</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab5">系統設定</button></li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- 1. 單筆錄入 -->
+      <div class="tab-pane fade show active" id="tab1">
+        <div class="card p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">選擇活動</label>
+              <select id="regEvent" class="form-select" onchange="updateFeeUI('reg')"></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">身分驗證 (年/班/座號)</label>
+              <div class="input-group">
+                <input type="number" id="regG" class="form-control" placeholder="年">
+                <input type="number" id="regC" class="form-control" placeholder="班">
+                <input type="number" id="regN" class="form-control" placeholder="號">
+                <button class="btn btn-primary" onclick="verifyStudent()">🔍 檢查姓名</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">學生姓名</label>
+              <input type="text" id="regName" class="form-control bg-light" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">報名級別 / 方案</label>
+              <select id="regLevel" class="form-select" onchange="calculateTotal('reg')"></select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">額外加購內容</label>
+              <div id="regAddons" class="border p-3 rounded bg-light"></div>
+            </div>
+            <div class="col-12 text-center mt-4">
+              <div class="h3 text-danger mb-3">應繳總額：NT$ <span id="regTotal">0</span></div>
+              <button class="btn btn-lg btn-success px-5" onclick="submitRegistration()">✅ 確認報名並產生收據</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 整批匯入 -->
+      <div class="tab-pane fade" id="tab2">
+        <div class="card p-4">
+          <h5 class="text-danger mb-3 d-flex align-items-center">
+            📂 Excel 名單整批匯入
+            <small class="ms-3 fw-bold text-danger bg-white border border-danger px-2 py-1 rounded shadow-sm" style="font-size: 0.8rem;">
+              ⚠️ 請務必確認「學生名冊」為當年度最新版本
+            </small>
+          </h5>
+          <div class="row">
+            <div class="col-md-5">
+              <h6>A. 統一設定活動方案</h6>
+              <select id="bulkEvent" class="form-select mb-2" onchange="updateFeeUI('bulk')"></select>
+              <select id="bulkLevel" class="form-select mb-2" onchange="calculateTotal('bulk')"></select>
+              <div id="bulkAddons" class="border p-2 rounded bg-light mb-2 small"></div>
+              <div class="alert alert-warning text-center fw-bold">單筆應繳：NT$ <span id="bulkTotal">0</span></div>
+            </div>
+            <div class="col-md-7">
+              <h6>B. 貼上學生座號清單 (從 Excel 複製「年 班 號」三欄貼上)</h6>
+              <textarea id="bulkInput" class="form-control" rows="8" placeholder="範例：&#10;7 1 5&#10;7 1 12"></textarea>
+              <button class="btn btn-danger w-100 mt-3 py-2 fw-bold" onclick="processBulk()">🚀 開始整批比對並匯入</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 快速核帳 -->
+      <div class="tab-pane fade" id="tab3">
+        <div class="card p-4">
+          <div class="input-group mb-4">
+            <span class="input-group-text bg-white">活動</span>
+            <select id="reconEvent" class="form-select" style="max-width: 200px;"></select>
+            <input type="text" id="reconKeyword" class="form-control" placeholder="輸入學生姓名或收據編號搜尋...">
+            <button class="btn btn-primary" onclick="searchStudent()">🔍 搜尋</button>
+          </div>
+          <div id="reconResults">
+             <div class="text-center text-muted p-5">請輸入關鍵字開始核帳</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 活動概覽 -->
+      <div class="tab-pane fade" id="tab4">
+        <div class="card p-4">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>活動名稱</th><th>報名人數</th><th>已收總額</th><th>校內截止</th><th>剩餘天數</th><th>管理</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 系統設定 -->
+      <div class="tab-pane fade" id="tab5">
+        <div class="card p-4">
+          <h5 class="border-start border-4 border-success ps-2 mb-4">建立新活動項目</h5>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">活動名稱</label><input type="text" id="setEventName" class="form-control" placeholder="如：115全民中檢"></div>
+            <div class="col-md-4"><label class="form-label">比賽日期</label><input type="date" id="setDateComp" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label">校內截止日</label><input type="date" id="setDateInt" class="form-control"></div>
+            <div class="col-12">
+              <label class="form-label">費用與級別設定 (格式：級別名稱,金額;級別2,金額)</label>
+              <input type="text" id="setFee" class="form-control" placeholder="如：常規報名,900;精進報名,1200">
+            </div>
+            <div class="col-12">
+              <label class="form-label">加購項目設定 (格式：項目名,加價金額;項目2,金額)</label>
+              <input type="text" id="setAddon" class="form-control" placeholder="如：素養題庫書,350;仿真題本,150">
+            </div>
+            <div class="col-12 text-end">
+              <button class="btn btn-success px-4" onclick="createNewEvent()">✨ 建立活動資料表</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 🌟🌟🌟 請務必修改下方這行網址 🌟🌟🌟
+    const API_URL = "https://script.google.com/macros/s/AKfycbwSGqXk_M3pyulVhh6hstEGD4uUmDl8Q81BhWyoDTOpKA4jT2iK8ckMyRx0nsJCQ6Il/exec"; 
+
+    // --- 核心共用 API 呼叫 (使用 fetch 跨域) ---
+    async function callAPI(action, payload = {}) {
+      payload.action = action;
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (err) {
+        console.error("API Error:", err);
+        alert("連線失敗，請檢查 API URL 是否正確或網路狀態。");
+      }
+    }
+
+    let allEvents = [];
+    let studentRoster = {};
+    let currentSearchResults = [];
+
+    // 初始化載入
+    async function init() {
+      const data = await callAPI('getInitialData');
+      if (!data || data.error) return alert(data?.error || "載入失敗，請確認 API 網址");
+      
+      allEvents = data.events;
+      studentRoster = data.roster;
+      
+      const options = allEvents.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+      document.getElementById('regEvent').innerHTML = options;
+      document.getElementById('bulkEvent').innerHTML = options;
+      document.getElementById('reconEvent').innerHTML = options;
+      
+      updateFeeUI('reg');
+      updateFeeUI('bulk');
+      renderDashboard();
+    }
+
+    // 介面與算費邏輯
+    function updateFeeUI(prefix) {
+      const eventName = document.getElementById(prefix + 'Event').value;
+      const event = allEvents.find(e => e.name === eventName);
+      if (!event) return;
+
+      const levels = event.baseFee.split(';').map(l => {
+        const parts = l.split(',');
+        return `<option value="${parts[1]}">${parts[0]} ($${parts[1]})</option>`;
+      });
+      document.getElementById(prefix + 'Level').innerHTML = levels.join('');
+
+      const addonContainer = document.getElementById(prefix + 'Addons');
+      if (!event.addons) {
+        addonContainer.innerHTML = "無加購項目";
+      } else {
+        const addons = event.addons.split(';').map(a => {
+          const parts = a.split(',');
+          return `
+            <div class="form-check form-check-inline">
+              <input class="form-check-input addon-cb" type="checkbox" value="${parts[1]}" data-name="${parts[0]}" onchange="calculateTotal('${prefix}')">
+              <label class="form-check-label">${parts[0]} (+$${parts[1]})</label>
+            </div>`;
+        });
+        addonContainer.innerHTML = addons.join('');
+      }
+      calculateTotal(prefix);
+    }
+
+    function calculateTotal(prefix) {
+      const base = parseInt(document.getElementById(prefix + 'Level').value) || 0;
+      let addonTotal = 0;
+      document.querySelectorAll(`#${prefix}Addons .addon-cb:checked`).forEach(cb => addonTotal += parseInt(cb.value));
+      document.getElementById(prefix + 'Total').innerText = base + addonTotal;
+    }
+
+    function verifyStudent() {
+      const key = `${document.getElementById('regG').value}-${document.getElementById('regC').value}-${document.getElementById('regN').value}`;
+      const name = studentRoster[key];
+      document.getElementById('regName').value = name || "";
+      if (!name) alert("⚠ 學生名冊中找不到此座號。");
+    }
+
+    // 表單送出 API 呼叫
+    async function submitRegistration() {
+      const name = document.getElementById('regName').value;
+      if (!name) return alert("請先驗證學生姓名！");
+      
+      const eventName = document.getElementById('regEvent').value;
+      const levelSelect = document.getElementById('regLevel');
+      const levelName = levelSelect.options[levelSelect.selectedIndex].text.split(' (')[0];
+      const selectedAddons = [];
+      document.querySelectorAll(`#regAddons .addon-cb:checked`).forEach(cb => selectedAddons.push(cb.getAttribute('data-name')));
+
+      const student = {
+        grade: document.getElementById('regG').value, clazz: document.getElementById('regC').value,
+        no: document.getElementById('regN').value, name: name, level: levelName,
+        addonDetail: selectedAddons.join(', ') || "無", totalAmount: document.getElementById('regTotal').innerText,
+        receiptNo: "RC-" + Math.floor(Math.random() * 10000000)
+      };
+
+      const res = await callAPI('registerStudent', { compName: "活動_" + eventName, student: student });
+      alert(res); init();
+    }
+
+    async function processBulk() {
+      const raw = document.getElementById('bulkInput').value.trim();
+      if (!raw) return alert("請貼上名單內容！");
+
+      const eventName = document.getElementById('bulkEvent').value;
+      const levelSelect = document.getElementById('bulkLevel');
+      const levelName = levelSelect.options[levelSelect.selectedIndex].text.split(' (')[0];
+      const totalAmount = document.getElementById('bulkTotal').innerText;
+      const selectedAddons = [];
+      document.querySelectorAll(`#bulkAddons .addon-cb:checked`).forEach(cb => selectedAddons.push(cb.getAttribute('data-name')));
+      
+      const lines = raw.split('\n');
+      const studentsArray = [];
+
+      lines.forEach(line => {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 3) {
+          const key = `${parts[0]}-${parts[1]}-${parts[2]}`;
+          studentsArray.push({
+            grade: parts[0], clazz: parts[1], no: parts[2],
+            name: studentRoster[key] || "!!未對到名冊!!", level: levelName, 
+            addonDetail: selectedAddons.join(', ') || "無",
+            totalAmount: totalAmount, receiptNo: "RC-" + Math.floor(Math.random() * 10000000)
+          });
+        }
+      });
+
+      if (confirm(`準備整批匯入 ${studentsArray.length} 位學生，確定嗎？`)) {
+        const res = await callAPI('bulkRegisterStudents', { compName: "活動_" + eventName, studentsArray: studentsArray });
+        alert(res); document.getElementById('bulkInput').value = ""; init();
+      }
+    }
+
+    // 核帳與補印邏輯
+    async function searchStudent() {
+      const eventName = document.getElementById('reconEvent').value;
+      const keyword = document.getElementById('reconKeyword').value.trim();
+      if(!keyword) return alert('請輸入搜尋關鍵字！');
+      
+      const resDiv = document.getElementById('reconResults');
+      resDiv.innerHTML = '<div class="text-center text-muted">搜尋資料庫中...</div>';
+      
+      const results = await callAPI('searchStudentRecord', { eventName, keyword });
+      if(results.error) return alert(results.error);
+      if(results.length === 0) return resDiv.innerHTML = '<div class="alert alert-warning">找不到符合條件的報名紀錄。</div>';
+      
+      currentSearchResults = results;
+      resDiv.innerHTML = results.map((r, idx) => `
+        <div class="border p-3 rounded mb-3 bg-white shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="m-0 text-primary">${r.name} <small class="text-muted">(${r.grade}年${r.clazz}班${r.no}號)</small></h5>
+            <span class="badge bg-secondary">${r.receipt}</span>
+          </div>
+          <p class="mb-2 small text-secondary">級別/方案：<b>${r.level || '無'}</b> | 加購明細：<b>${r.addons}</b></p>
+          <div class="row g-2 align-items-center bg-light p-2 rounded mb-2">
+            <div class="col-sm-4">
+              <label class="form-label small m-0">應繳總額</label>
+              <input type="text" class="form-control form-control-sm text-center fw-bold text-danger" value="${r.totalDue}" readonly>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small m-0 text-success fw-bold">實際收款</label>
+              <input type="number" id="paid_${r.rowIndex}" class="form-control form-control-sm border-success text-center" value="${r.paid}">
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small m-0">繳費狀態</label>
+              <select id="status_${r.rowIndex}" class="form-select form-select-sm">
+                <option value="待繳費" ${r.status === '待繳費' ? 'selected' : ''}>待繳費</option>
+                <option value="已繳費" ${r.status === '已繳費' ? 'selected' : ''}>已繳費</option>
+                <option value="異常退件" ${r.status === '異常退件' ? 'selected' : ''}>異常退件</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-sm btn-success flex-grow-1" onclick="updateStatus('${eventName}', ${r.rowIndex})">💾 儲存核帳狀態</button>
+            <button class="btn btn-sm btn-outline-warning flex-grow-1 fw-bold" onclick="reprintPDF(${idx}, '${eventName}')" id="btnReprint_${r.rowIndex}">📄 補印雙聯單據</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateStatus(eventName, rowIndex) {
+      const paid = document.getElementById('paid_' + rowIndex).value;
+      const status = document.getElementById('status_' + rowIndex).value;
+      const res = await callAPI('updatePaymentStatus', { eventName, rowIndex, paidAmount: paid, status: status });
+      alert(res); searchStudent();
+    }
+
+    async function reprintPDF(idx, eventName) {
+      const r = currentSearchResults[idx];
+      const btn = document.getElementById(`btnReprint_${r.rowIndex}`);
+      const originalText = btn.innerHTML;
+      btn.innerHTML = "⏳ 產出中..."; btn.disabled = true;
+
+      const printData = {
+        eventName: eventName, grade: r.grade, clazz: r.clazz, no: r.no, name: r.name,
+        level: r.level, addonDetail: r.addons, totalAmount: r.totalDue, receiptNo: r.receipt
+      };
+
+      const res = await callAPI('generateReceiptPDF', { data: printData });
+      btn.innerHTML = originalText; btn.disabled = false;
+      if (res.error) return alert(res.error);
+      
+      const link = document.createElement('a'); 
+      link.href = 'data:application/pdf;base64,' + res.base64;
+      link.download = res.fileName; link.click();
+    }
+
+    // 儀表板與其他功能
+    function renderDashboard() {
+      document.getElementById('dashboardTable').innerHTML = allEvents.map(e => `
+        <tr>
+          <td class="fw-bold">${e.name}</td><td>${e.count} 人</td><td class="text-success fw-bold">$${e.totalPaid}</td>
+          <td>${e.deadline}</td><td><span class="badge ${e.daysLeft < 3 ? 'bg-danger':'bg-primary'}">${e.daysLeft} 天</span></td>
+          <td><button class="btn btn-sm btn-outline-secondary" onclick="exportCSV('${e.name}')">📊 匯出資料</button></td>
+        </tr>
+      `).join('');
+    }
+
+    async function createNewEvent() {
+      const info = {
+        name: document.getElementById('setEventName').value, dateComp: document.getElementById('setDateComp').value,
+        dateInt: document.getElementById('setDateInt').value, dateExt: document.getElementById('setDateInt').value,
+        feeStr: document.getElementById('setFee').value, addonStr: document.getElementById('setAddon').value
+      };
+      if(!info.name || !info.feeStr) return alert("請填寫活動名稱與費用設定！");
+      const res = await callAPI('addNewEvent', { info }); alert(res); init();
+    }
+
+    async function exportCSV(eventName) {
+      const data = await callAPI('getEventSheetData', { eventName });
+      if (data.error) return alert(data.error);
+      
+      let csvContent = "\uFEFF"; 
+      data.forEach(row => { csvContent += row.map(cell => `"${cell}"`).join(",") + "\n"; });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `大甲國中_${eventName}_名單.csv`); link.click();
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
