@@ -357,7 +357,8 @@
       const printData = {
         eventName: eventName, grade: r.grade, clazz: r.clazz, no: r.no, name: r.name,
         level: r.level, addonDetail: r.addons, totalAmount: r.totalDue, receiptNo: r.receipt,
-        paid: r.paid, status: r.status  // 🌟 這裡把遺漏的「實收」與「狀態」補上！
+        paid: r.paid, status: r.status,
+        source: 'admin'  // 🌟 新增這行：告訴系統這是教務處印的，請給我空白印章框
       };
 
       const res = await callAPI('generateReceiptPDF', { data: printData });
