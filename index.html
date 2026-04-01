@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大甲國中教務處 活動報名系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Canva 風格：柔和夢幻的網格漸層背景 (與前一版相同) */
+    body {
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 30px 15px;
+      display: flex; align-items: flex-start; justify-content: center;
+      position: relative; overflow-x: hidden;
+    }
+    body::before { content: ""; position: fixed; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%); z-index: -1; }
+    body::after { content: ""; position: fixed; bottom: -10%; right: -10%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 70%); z-index: -1; }
+    .container { max-width: 600px; width: 100%; margin: 0; z-index: 1; }
+    .page-title { font-weight: 900; font-size: 2.4rem; letter-spacing: 1px; background: linear-gradient(45deg, #2c3e50, #3498db); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+    .page-subtitle { color: #576574; font-size: 1.05rem; font-weight: 500; }
+    .card-custom { border: none; border-radius: 24px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05); padding: 40px 35px; transition: transform 0.3s ease; }
+    .notice-box { background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%); border-left: 5px solid #a1c4fd; border-radius: 12px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .notice-title { font-weight: bold; color: #576574; margin-bottom: 6px; font-size: 1.1rem; }
+    .notice-text { color: #8395a7; font-size: 0.95rem; line-height: 1.5; }
+    .section-label { color: #34495e; font-weight: 800; font-size: 1.15rem; margin-bottom: 12px; }
+    .form-control, .form-select { background-color: #f1f2f6; border: 2px solid transparent; border-radius: 14px; padding: 14px 16px; font-size: 1rem; color: #2f3542; transition: all 0.3s ease; }
+    .form-control:focus, .form-select:focus { background-color: #ffffff; border-color: #70a1ff; box-shadow: 0 0 0 4px rgba(112, 161, 255, 0.2); outline: none; }
+    .form-control::placeholder { color: #ced6e0; font-weight: 400; }
+    .btn-query { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; border-radius: 50px; font-weight: bold; border: none; letter-spacing: 2px; box-shadow: 0 8px 20px rgba(37, 117, 252, 0.3); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+    .btn-query:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 25px rgba(37, 117, 252, 0.4); color: white; }
+    .btn-query:active { transform: translateY(1px) scale(0.98); }
+    .status-box { padding: 18px; border-radius: 16px; border: none; background: #f8f9fa; text-align: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+    .btn-outline-primary { border-radius: 50px; border: 2px solid #2575fc; color: #2575fc; transition: all 0.3s ease; }
+    .btn-outline-primary:hover { background: #2575fc; color: white; box-shadow: 0 8px 20px rgba(37, 117, 252, 0.2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="text-center mb-4">
+      <h2 class="page-title">大甲國中教務處 活動報名系統</h2>
+      <p class="page-subtitle">✨ 各項活動 / 檢定 - 進度查詢與單據下載</p>
+    </div>
+
+    <div class="card card-custom">
+      <div class="notice-box">
+        <div class="notice-title">👋 家長您好：</div>
+        <div class="notice-text">請於下方輸入學生的正確資訊，即可快速查詢目前的繳費狀態，或是下載專屬的電子收件憑證。</div>
+      </div>
+
+      <div class="section-label">1. 選擇報名活動</div>
+      <select id="parentEvent" class="form-select mb-4">
+        <option>載入活動中...</option>
+      </select>
+
+      <div class="section-label">2. 學生身分驗證</div>
+      <div class="row g-3 mb-4">
+        <div class="col-3"><input type="number" id="pG" class="form-control text-center" placeholder="年級"></div>
+        <div class="col-3"><input type="number" id="pC" class="form-control text-center" placeholder="班級"></div>
+        <div class="col-3"><input type="number" id="pN" class="form-control text-center" placeholder="座號"></div>
+        <div class="col-3"><input type="text" id="pName" class="form-control text-center" placeholder="姓名"></div>
+      </div>
+
+      <button class="btn btn-query w-100 py-3 fs-5 mt-2" id="btnParentQuery" onclick="doParentQuery()">🚀 立即查詢進度</button>
+
+      <div id="parentResult" class="mt-4 d-none">
+        <hr style="border-color: #f1f2f6; border-width: 2px; margin: 30px 0;">
+        <h5 class="text-center text-success fw-bold mb-4">🎉 查詢成功</h5>
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="status-box">
+              <div class="small text-muted mb-1 fw-bold">目前狀態</div>
+              <div id="resStatus" class="fs-4 fw-bold text-danger">待繳費</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="status-box">
+              <div class="small text-muted mb-1 fw-bold">應繳總額</div>
+              <div class="fs-4 fw-bold" style="color: #ff9f43;">NT$ <span id="resTotal"></span></div>
+            </div>
+          </div>
+          <div class="col-12 text-center text-muted small bg-light p-3 rounded" style="border: 1px dashed #ced6e0;">
+            報名明細：<span id="resDetail" class="fw-bold text-dark"></span>
+          </div>
+        </div>
+        <button class="btn btn-outline-primary w-100 mt-4 py-3 fw-bold fs-6" id="btnParentPDF" onclick="downloadParentPDF()">📄 下載電子收據 / 紙本同意書 PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 用以觸發音效，避免跨域載入阻擋，改用瀏覽器內建 audio -->
+  <audio id="snd" src="https://actions.google.com/sounds/v1/communication/notification_high_intensity.ogg" crossorigin="anonymous"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 🌟🌟🌟 將這裡替換成您剛剛複製出來的 GAS 應用程式網址 🌟🌟🌟
+    const API_URL = "https://script.google.com/macros/s/AKfycbwSGqXk_M3pyulVhh6hstEGD4uUmDl8Q81BhWyoDTOpKA4jT2iK8ckMyRx0nsJCQ6Il/exec"; 
+
+    // --- 核心共用：與 Google Apps Script 溝通的 Fetch API ---
+    async function callAPI(action, payload = {}) {
+      payload.action = action;
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          // 使用 text/plain 可以繞過 CORS 預檢請求限制，這是在 GitHub 呼叫 GAS 的黑魔法！
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (err) {
+        console.error("API 錯誤:", err);
+        return { error: "無法連線到資料庫，請稍後再試。" };
+      }
+    }
+
+    let parentQueryData = null;
+
+    // 網頁載入時，呼叫 API 抓取活動清單
+    window.onload = function() {
+      callAPI('getFullEventData').then(data => {
+        if (data && !data.error) {
+          const sel = document.getElementById('parentEvent');
+          sel.innerHTML = data.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+        }
+      });
+    };
+
+    function doParentQuery() {
+      const eventName = document.getElementById('parentEvent').value;
+      const grade = document.getElementById('pG').value;
+      const clazz = document.getElementById('pC').value;
+      const no = document.getElementById('pN').value;
+      const name = document.getElementById('pName').value.trim();
+
+      if (!grade || !clazz || !no || !name) return alert("請完整輸入年、班、號與姓名！");
+
+      const btn = document.getElementById('btnParentQuery');
+      btn.innerText = "連線查詢中..."; btn.disabled = true;
+      document.getElementById('parentResult').classList.add('d-none');
+
+      // 呼叫我們自己的 API
+      callAPI('queryStudentRegistration', { eventName, grade, clazz, no, name }).then(res => {
+        btn.innerHTML = "🚀 立即查詢進度"; btn.disabled = false;
+        if (res.error) return alert(res.error);
+
+        parentQueryData = res;
+        document.getElementById('parentResult').classList.remove('d-none');
+        
+        const statusEl = document.getElementById('resStatus');
+        statusEl.innerText = res.status;
+        if (res.status === '已繳費') statusEl.className = "fs-4 fw-bold text-success";
+        else if (res.status === '異常退件') statusEl.className = "fs-4 fw-bold text-secondary";
+        else statusEl.className = "fs-4 fw-bold text-danger";
+        
+        document.getElementById('resTotal').innerText = res.totalAmount;
+        const lvl = res.level && res.level !== '無' ? `[${res.level}] ` : '';
+        document.getElementById('resDetail').innerText = lvl + res.addonDetail;
+        
+        try { document.getElementById('snd').play(); } catch(e){}
+      });
+    }
+
+    function downloadParentPDF() {
+      const btn = document.getElementById('btnParentPDF');
+      btn.innerHTML = "⏳ 檔案產生中..."; btn.disabled = true;
+      
+      callAPI('generateReceiptPDF', { data: parentQueryData }).then(res => {
+        btn.innerHTML = "📄 下載電子收據 / 紙本同意書 PDF"; btn.disabled = false;
+        if (res.error) return alert(res.error);
+        
+        // 觸發下載
+        const link = document.createElement('a'); 
+        link.href = 'data:application/pdf;base64,' + res.base64;
+        link.download = res.fileName; 
+        link.click();
+      });
+    }
+  </script>
+</body>
+</html>
